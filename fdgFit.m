@@ -30,26 +30,26 @@ function [Ki_Norm, Ki_Hyp, MRglc_Norm, MRglc_Hyp,cp] = fdgFit(bloodTAC, tissueTA
     options.MaxIterations = 5000;
     
     % Objective function to minimize: (tissueFit-tissueROI)^2 + (bloodFit-bloodROI)^2
-    % tissueFit = ?Cb + (1-?)(Cf + Cm)
-    % bloodFit = ?Cb + (1-?)(Cf + Cm)
+    % tissueFit = aCb + (1-a)(Cf + Cm)
+    % bloodFit = bCb + (1-b)(Cf + Cm)
     % Cb, Cf, and Cm are the three compartments in the model (blood, tissue-free, tissue-metabolized)
-    % ? and (1-?) are the blood-to-tissue and the tissue-to-blood
+    % a and (1-b) are the blood-to-tissue and the tissue-to-blood
     % spillover fractions, respectively. 
     %
     % x is the variable to be minimized by fmincon, and it contains the
-    % following array: [?, ?, k1_norm, k1_hyp, k2_norm, k2_hyp, k3_norm, k3_hyp, Cb, Cf, Cm]
+    % following array: [a, b, k1_norm, k1_hyp, k2_norm, k2_hyp, k3_norm, k3_hyp, Cb, Cf, Cm]
     obj = @(x) sum((x(1)*x((1:nT)+8) + (1-x(1))*(x((1:nT)+nT+8)+x((1:nT)+2*nT+8)) - tissueTAC).^2 + ...
                    (x(2)*x((1:nT)+8) + (1-x(2))*(x((1:nT)+nT+8)+x((1:nT)+2*nT+8)) - bloodTAC).^2);
     
     if fitblood
         startingX = [0.17;0.98;0.34;0.34;1.64;1.64;.05;.05;bloodTAC;bloodTAC/6;(tissueTAC-.17*bloodTAC)-bloodTAC/6];
         lowerLim = [0;0.9;zeros(3*nT+6,1)];
-        upperLim = [0.5;1]; % ?<0.5 and (1-?)<0.1
+        upperLim = [0.5;1]; % a<0.5 and (1-b)<0.1
         res = fmincon(obj, startingX, [], [], [], [], lowerLim, upperLim, @mycon, options);
     else
         startingX = [0.05;1.0;0.34;0.34;1.64;1.64;.05;.05;bloodTAC;bloodTAC/6;(tissueTAC-.17*bloodTAC)-bloodTAC/6];
         lowerLim = [0;1.0;zeros(3*nT+6,1)];
-        upperLim = [0.1;1.0];% ?<0.1 and (1-?)=0
+        upperLim = [0.1;1.0];% a<0.1 and (1-b)=0
         res = fmincon(obj, startingX, [], [], [], [], lowerLim, upperLim, @mycon, options); % Run the optimization, solve for x
     end
     
